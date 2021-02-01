@@ -152,8 +152,8 @@ struct fake_spell {
     translation npc_trigger_message;
 
     fake_spell() = default;
-    explicit fake_spell( const spell_id &sp_id, bool hit_self = false,
-                         const cata::optional<int> &max_level = cata::nullopt ) : id( sp_id ),
+    fake_spell( const spell_id &sp_id, bool hit_self = false,
+                const cata::optional<int> &max_level = cata::nullopt ) : id( sp_id ),
         max_level( max_level ), self( hit_self ) {}
 
     bool operator==( const fake_spell &rhs ) const {
@@ -405,7 +405,7 @@ class spell
 
     public:
         spell() = default;
-        explicit spell( spell_id sp, int xp = 0 );
+        spell( spell_id sp, int xp = 0 );
 
         // sets the message to be different than the spell_type specifies
         void set_message( const translation &msg );
@@ -627,7 +627,7 @@ struct override_parameters {
     int range;
     bool ignore_walls;
 
-    explicit override_parameters( const spell &sp ) {
+    override_parameters( const spell &sp ) {
         aoe_radius = sp.aoe();
         range = sp.range();
         ignore_walls = sp.has_flag( spell_flag::IGNORE_WALLS );
@@ -635,6 +635,7 @@ struct override_parameters {
 };
 
 void teleport_random( const spell &sp, Creature &caster, const tripoint & );
+void teleport_to( const spell &sp, Creature &caster, const tripoint &target );
 void pain_split( const spell &, Creature &, const tripoint & );
 void attack( const spell &sp, Creature &caster,
              const tripoint &epicenter );
@@ -687,6 +688,7 @@ effect_map{
     { "attack", spell_effect::attack },
     { "targeted_polymorph", spell_effect::targeted_polymorph },
     { "teleport_random", spell_effect::teleport_random },
+    { "teleport_to", spell_effect::teleport_to },
     { "spawn_item", spell_effect::spawn_ethereal_item },
     { "recover_energy", spell_effect::recover_energy },
     { "summon", spell_effect::spawn_summoned_monster },
@@ -746,7 +748,7 @@ struct area_expander {
     std::map<tripoint, int> area_search;
 
     struct area_node_comparator {
-        explicit area_node_comparator( std::vector<area_expander::node> &area ) : area( area ) {
+        area_node_comparator( std::vector<area_expander::node> &area ) : area( area ) {
         }
 
         bool operator()( int a, int b ) const {

@@ -2,8 +2,8 @@
 
 #include <cstddef>
 #include <fstream>
-#include <iterator>
 #include <memory>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -19,6 +19,7 @@
 #include "bodypart.h"
 #include "butchery_requirements.h"
 #include "cata_assert.h"
+#include "cata_utility.h"
 #include "clothing_mod.h"
 #include "clzones.h"
 #include "construction.h"
@@ -30,6 +31,7 @@
 #include "dialogue.h"
 #include "disease.h"
 #include "effect.h"
+#include "effect_on_condition.h"
 #include "emit.h"
 #include "event_statistics.h"
 #include "faction.h"
@@ -42,6 +44,7 @@
 #include "item_action.h"
 #include "item_category.h"
 #include "item_factory.h"
+#include "itype.h"
 #include "json.h"
 #include "loading_ui.h"
 #include "lru_cache.h"
@@ -78,7 +81,7 @@
 #include "rotatable_symbols.h"
 #include "scenario.h"
 #include "scent_map.h"
-#include "sdltiles.h"
+#include "sdltiles.h" // IWYU pragma: keep
 #include "skill.h"
 #include "skill_boost.h"
 #include "sounds.h"
@@ -237,6 +240,7 @@ void DynamicDataLoader::initialize()
     add( "json_flag", &json_flag::load_all );
     add( "fault", &fault::load_fault );
     add( "relic_procgen_data", &relic_procgen_data::load_relic_procgen_data );
+    add( "effect_on_condition", &effect_on_conditions::load );
     add( "field_type", &field_types::load );
     add( "weather_type", &weather_types::load );
     add( "ammo_effect", &ammo_effects::load );
@@ -419,10 +423,7 @@ void DynamicDataLoader::initialize()
         mission_type::load_mission_type( jo, src );
     } );
     add( "butchery_requirement", &butchery_requirements::load_butchery_req );
-    add( "harvest", []( const JsonObject & jo, const std::string & src ) {
-        harvest_list::load( jo, src );
-    } );
-
+    add( "harvest", &harvest_list::load_harvest_list );
     add( "monster_attack", []( const JsonObject & jo, const std::string & src ) {
         MonsterGenerator::generator().load_monster_attack( jo, src );
     } );
@@ -527,6 +528,7 @@ void DynamicDataLoader::unload_data()
     dreams.clear();
     emit::reset();
     event_statistic::reset();
+    effect_on_conditions::reset();
     event_transformation::reset();
     faction_template::reset();
     fault::reset();
@@ -617,6 +619,7 @@ void DynamicDataLoader::finalize_loaded_data( loading_ui &ui )
             { _( "Flags" ), &json_flag::finalize_all },
             { _( "Body parts" ), &body_part_type::finalize_all },
             { _( "Weather types" ), &weather_types::finalize_all },
+            { _( "Effect on conditions" ), &effect_on_conditions::finalize_all },
             { _( "Field types" ), &field_types::finalize_all },
             { _( "Ammo effects" ), &ammo_effects::finalize_all },
             { _( "Emissions" ), &emit::finalize },
@@ -701,6 +704,7 @@ void DynamicDataLoader::check_consistency( loading_ui &ui )
             },
             { _( "Vitamins" ), &vitamin::check_consistency },
             { _( "Weather types" ), &weather_types::check_consistency },
+            { _( "Effect on conditions" ), &effect_on_conditions::check_consistency },
             { _( "Field types" ), &field_types::check_consistency },
             { _( "Ammo effects" ), &ammo_effects::check_consistency },
             { _( "Emissions" ), &emit::check_consistency },

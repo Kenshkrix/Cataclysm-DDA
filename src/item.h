@@ -6,10 +6,11 @@
 #include <climits>
 #include <cstdint>
 #include <functional>
+#include <iosfwd>
 #include <list>
 #include <map>
+#include <new>
 #include <set>
-#include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -18,7 +19,6 @@
 #include "cata_utility.h"
 #include "craft_command.h"
 #include "enums.h"
-#include "flat_set.h"
 #include "gun_mode.h"
 #include "io_tags.h"
 #include "item_contents.h"
@@ -28,31 +28,30 @@
 #include "optional.h"
 #include "requirements.h"
 #include "safe_reference.h"
-#include "string_id.h"
 #include "type_id.h"
 #include "units.h"
-#include "units_fwd.h"
 #include "value_ptr.h"
 #include "visitable.h"
 
-class book_proficiency_bonuses;
 class Character;
+class Creature;
 class JsonIn;
 class JsonObject;
 class JsonOut;
+class book_proficiency_bonuses;
 class enchantment;
 class faction;
 class gun_type_type;
 class gunmod_location;
 class item;
 class iteminfo_query;
-class material_type;
 class monster;
 class nc_color;
 class player;
 class recipe;
 class relic;
 struct armor_portion_data;
+struct gun_variant_data;
 struct islot_comestible;
 struct itype;
 struct mtype;
@@ -168,9 +167,9 @@ struct enum_traits<iteminfo::flags> {
 };
 
 iteminfo vol_to_info( const std::string &type, const std::string &left,
-                      const units::volume &vol, int decimal_places = 2 );
+                      const units::volume &vol, int decimal_places = 2, bool lower_is_better = true );
 iteminfo weight_to_info( const std::string &type, const std::string &left,
-                         const units::mass &weight, int decimal_places = 2 );
+                         const units::mass &weight, int decimal_places = 2, bool lower_is_better = true );
 
 inline bool is_crafting_component( const item &component );
 
@@ -336,6 +335,11 @@ class item : public visitable
         bool is_money() const;
         bool is_software() const;
         bool is_software_storage() const;
+
+        /**
+         * Returns a symbol for indicating the current dirt or fouling level for a gun.
+         */
+        std::string dirt_symbol() const;
 
         /**
          * Returns the default color of the item (e.g. @ref itype::color).
@@ -571,8 +575,9 @@ class item : public visitable
          * NOTE: Result is rounded up to next nearest milliliter when working with stackable (@ref count_by_charges) items that have fractional volume per charge.
          * If trying to determine how many of an item can fit in a given space, @ref charges_per_volume should be used instead.
          * @param integral if true return effective volume if this item was integrated into another
+         * @param ignore_contents if true return effective volume for the item alone, ignoring its contents
          */
-        units::volume volume( bool integral = false ) const;
+        units::volume volume( bool integral = false, bool ignore_contents = false ) const;
 
         units::length length() const;
 
@@ -621,7 +626,7 @@ class item : public visitable
         * Calculate the item's effective damage per second past armor when wielded by a
          * character against a monster.
          */
-        double effective_dps( const Character &guy, monster &mon ) const;
+        double effective_dps( const Character &guy, Creature &mon ) const;
         /**
          * calculate effective dps against a stock set of monsters.  by default, assume g->u
          * is wielding
@@ -898,7 +903,7 @@ class item : public visitable
          * 1 for other comestibles,
          * 0 otherwise.
          */
-        int spoilage_sort_order();
+        int spoilage_sort_order() const;
 
         /** an item is fresh if it is capable of rotting but still has a long shelf life remaining */
         bool is_fresh() const {
@@ -1241,7 +1246,7 @@ class item : public visitable
         float get_specific_heat_liquid() const;
         float get_specific_heat_solid() const;
         float get_latent_heat() const;
-        float get_freeze_point() const; // Fahrenheit
+        float get_freeze_point() const; // Celsius
 
         // If this is food, returns itself.  If it contains food, return that
         // contents.  Otherwise, returns nullptr.
@@ -1799,6 +1804,27 @@ class item : public visitable
          */
         bool is_gun() const;
 
+        /**
+         * Does this item have a gun variant associated with it
+         * If check_option, the return of this is dependent on the SHOW_GUN_VARIANTS option
+         */
+        bool has_gun_variant( bool check_option = true ) const;
+
+        /**
+         * The gun variant associated with this item
+         */
+        const gun_variant_data &gun_variant() const;
+
+        /**
+         * Set the gun variant of this item
+         */
+        void set_gun_variant( const std::string &variant );
+
+        /**
+         * For debug use only
+         */
+        void clear_gun_variant();
+
         /** Quantity of energy currently loaded in tool or battery */
         units::energy energy_remaining() const;
 
@@ -2246,6 +2272,8 @@ class item : public visitable
         /** Helper for checking reloadability. **/
         bool is_reloadable_helper( const itype_id &ammo, bool now ) const;
 
+        void armor_encumbrance_info( std::vector<iteminfo> &info, int reduce_encumbrance_by = 0 ) const;
+
     public:
         enum class sizing : int {
             human_sized_human_char = 0,
@@ -2299,6 +2327,13 @@ class item : public visitable
         const mtype *corpse = nullptr;
         std::string corpse_name;       // Name of the late lamented
         std::set<matec_id> techniques; // item specific techniques
+
+        // Select a random variant from the possibilities
+        // Intended to be called when no explicit variant is set
+        void select_gun_variant();
+
+        // If the item has a gun variant, this points to it
+        const gun_variant_data *_gun_variant = nullptr;
 
         /**
          * Data for items that represent in-progress crafts.

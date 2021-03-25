@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <functional>
 #include <memory>
 #include <unordered_set>
 
+#include "activity_type.h"
 #include "avatar_action.h"
 #include "bionics.h"
 #include "character.h"
@@ -16,10 +18,10 @@
 #include "event_bus.h"
 #include "field_type.h"
 #include "game.h"
-#include "int_id.h"
 #include "item.h"
 #include "item_contents.h"
 #include "itype.h"
+#include "magic_enchantment.h"
 #include "make_static.h"
 #include "map.h"
 #include "map_iterator.h"
@@ -29,9 +31,9 @@
 #include "omdata.h"
 #include "output.h"
 #include "overmapbuffer.h"
+#include "pimpl.h"
 #include "player_activity.h"
 #include "rng.h"
-#include "string_id.h"
 #include "translations.h"
 #include "units.h"
 
@@ -104,13 +106,19 @@ bool Character::has_trait( const trait_id &b ) const
     return my_mutations.count( b ) || enchantment_cache->get_mutations().count( b );
 }
 
-bool Character::has_trait_flag( const std::string &b ) const
+bool Character::has_trait_flag( const json_character_flag &b ) const
 {
     // UGLY, SLOW, should be cached as my_mutation_flags or something
     for( const trait_id &mut : get_mutations() ) {
         const mutation_branch &mut_data = mut.obj();
         if( mut_data.flags.count( b ) > 0 ) {
             return true;
+        } else if( mut_data.activated ) {
+            Character &player = get_player_character();
+            if( ( mut_data.active_flags.count( b ) > 0 && player.has_active_mutation( mut ) ) ||
+                ( mut_data.inactive_flags.count( b ) > 0 && !player.has_active_mutation( mut ) ) ) {
+                return true;
+            }
         }
     }
 
@@ -150,17 +158,19 @@ void Character::toggle_trait( const trait_id &trait_ )
     }
 }
 
-void Character::set_mutations( const std::vector<trait_id> &traits )
+void Character::set_mutation_unsafe( const trait_id &trait )
 {
-    for( const trait_id &trait : traits ) {
-        const auto iter = my_mutations.find( trait );
-        if( iter != my_mutations.end() ) {
-            continue;
-        }
-        my_mutations.emplace( trait, trait_data{} );
-        cached_mutations.push_back( &trait.obj() );
-        mutation_effect( trait, false );
+    const auto iter = my_mutations.find( trait );
+    if( iter != my_mutations.end() ) {
+        return;
     }
+    my_mutations.emplace( trait, trait_data{} );
+    cached_mutations.push_back( &trait.obj() );
+    mutation_effect( trait, false );
+}
+
+void Character::do_mutation_updates()
+{
     recalc_sight_limits();
     calc_encumbrance();
 
@@ -170,22 +180,18 @@ void Character::set_mutations( const std::vector<trait_id> &traits )
     }
 }
 
+void Character::set_mutations( const std::vector<trait_id> &traits )
+{
+    for( const trait_id &trait : traits ) {
+        set_mutation_unsafe( trait );
+    }
+    do_mutation_updates();
+}
+
 void Character::set_mutation( const trait_id &trait )
 {
-    const auto iter = my_mutations.find( trait );
-    if( iter != my_mutations.end() ) {
-        return;
-    }
-    my_mutations.emplace( trait, trait_data{} );
-    cached_mutations.push_back( &trait.obj() );
-    mutation_effect( trait, false );
-    recalc_sight_limits();
-    calc_encumbrance();
-
-    // If the stamina is higher than the max (Languorous), set it back to max
-    if( get_stamina() > get_stamina_max() ) {
-        set_stamina( get_stamina_max() );
-    }
+    set_mutation_unsafe( trait );
+    do_mutation_updates();
 }
 
 void Character::unset_mutation( const trait_id &trait_ )
@@ -848,6 +854,10 @@ bool Character::mutation_ok( const trait_id &mutation, bool force_good, bool for
                 return false;
             }
         }
+
+        if( bid->mutation_conflicts.count( mutation ) != 0 ) {
+            return false;
+        }
     }
 
     const mutation_branch &mdata = mutation.obj();
@@ -1174,6 +1184,14 @@ bool Character::mutate_towards( const trait_id &mut )
     if( profession ) {
         // Profession picks fail silently
         return false;
+    }
+
+    // Just prevent it when it conflicts with a CBM, for now
+    // TODO: Consequences?
+    for( const bionic_id &bid : get_bionics() ) {
+        if( bid->mutation_conflicts.count( mut ) != 0 ) {
+            return false;
+        }
     }
 
     for( size_t i = 0; !has_threshreq && i < threshreq.size(); i++ ) {

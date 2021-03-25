@@ -5,9 +5,11 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
+#include <type_traits>
 #include <unordered_map>
 
-#include "cached_options.h"
+#include "activity_type.h"
+#include "cached_options.h" // IWYU pragma: keep
 #include "calendar.h"
 #include "character.h"
 #include "coordinate_conversions.h"
@@ -17,9 +19,9 @@
 #include "enums.h"
 #include "game.h"
 #include "game_constants.h"
-#include "itype.h"
-#include "json.h"
+#include "itype.h" // IWYU pragma: keep
 #include "line.h"
+#include "make_static.h"
 #include "map.h"
 #include "map_iterator.h"
 #include "messages.h"
@@ -32,10 +34,10 @@
 #include "rng.h"
 #include "safemode_ui.h"
 #include "string_formatter.h"
-#include "string_id.h"
 #include "translations.h"
 #include "type_id.h"
-#include "veh_type.h"
+#include "units.h"
+#include "veh_type.h" // IWYU pragma: keep
 #include "vehicle.h"
 #include "vpart_position.h"
 #include "weather.h"
@@ -288,7 +290,8 @@ static int get_signal_for_hordes( const centroid &centr )
         sig_power = std::max( sig_power, min_sig_cap );
         //Capping extremely high signal to hordes
         sig_power = std::min( sig_power, max_sig_cap );
-        add_msg_debug( "vol %d  vol_hordes %d sig_power %d ", vol, vol_hordes, sig_power );
+        add_msg_debug( debugmode::DF_SOUND, "vol %d  vol_hordes %d sig_power %d ", vol, vol_hordes,
+                       sig_power );
         return sig_power;
     }
     return 0;
@@ -497,7 +500,7 @@ void sounds::process_sound_markers( player *p )
         }
 
         if( !p->has_effect( effect_sleep ) && p->has_effect( effect_alarm_clock ) &&
-            !p->has_bionic( bionic_id( "bio_watch" ) ) ) {
+            !p->has_flag( STATIC( json_character_flag( "ALARMCLOCK" ) ) ) ) {
             // if we don't have effect_sleep but we're in_sleep_state, either
             // we were trying to fall asleep for so long our alarm is now going
             // off or something disturbed us while trying to sleep
@@ -679,7 +682,7 @@ void sfx::do_vehicle_engine_sfx()
     const Character &player_character = get_player_character();
     if( !player_character.in_vehicle ) {
         fade_audio_channel( ch, 300 );
-        add_msg_debug( "STOP interior_engine_sound, OUT OF CAR" );
+        add_msg_debug( debugmode::DF_SOUND, "STOP interior_engine_sound, OUT OF CAR" );
         return;
     }
     if( player_character.in_sleep_state() && !audio_muted ) {
@@ -698,7 +701,7 @@ void sfx::do_vehicle_engine_sfx()
     }
     if( !veh->engine_on ) {
         fade_audio_channel( ch, 100 );
-        add_msg_debug( "STOP interior_engine_sound" );
+        add_msg_debug( debugmode::DF_SOUND, "STOP interior_engine_sound" );
         return;
     }
 
@@ -725,9 +728,9 @@ void sfx::do_vehicle_engine_sfx()
     if( !is_channel_playing( ch ) ) {
         play_ambient_variant_sound( id_and_variant.first, id_and_variant.second,
                                     sfx::get_heard_volume( player_character.pos() ), ch, 1000 );
-        add_msg_debug( "START %s %s", id_and_variant.first, id_and_variant.second );
+        add_msg_debug( debugmode::DF_SOUND, "START %s %s", id_and_variant.first, id_and_variant.second );
     } else {
-        add_msg_debug( "PLAYING" );
+        add_msg_debug( debugmode::DF_SOUND, "PLAYING" );
     }
     int current_speed = veh->velocity;
     bool in_reverse = false;
@@ -763,11 +766,11 @@ void sfx::do_vehicle_engine_sfx()
     if( current_gear > previous_gear ) {
         play_variant_sound( "vehicle", "gear_shift", get_heard_volume( player_character.pos() ),
                             0_degrees, 0.8, 0.8 );
-        add_msg_debug( "GEAR UP" );
+        add_msg_debug( debugmode::DF_SOUND, "GEAR UP" );
     } else if( current_gear < previous_gear ) {
         play_variant_sound( "vehicle", "gear_shift", get_heard_volume( player_character.pos() ),
                             0_degrees, 1.2, 1.2 );
-        add_msg_debug( "GEAR DOWN" );
+        add_msg_debug( debugmode::DF_SOUND, "GEAR DOWN" );
     }
     if( ( safe_speed != 0 ) ) {
         if( current_gear == 0 ) {
@@ -784,10 +787,10 @@ void sfx::do_vehicle_engine_sfx()
 
     if( current_speed != previous_speed ) {
         Mix_HaltChannel( static_cast<int>( ch ) );
-        add_msg_debug( "STOP speed %d =/= %d", current_speed, previous_speed );
+        add_msg_debug( debugmode::DF_SOUND, "STOP speed %d =/= %d", current_speed, previous_speed );
         play_ambient_variant_sound( id_and_variant.first, id_and_variant.second,
                                     sfx::get_heard_volume( player_character.pos() ), ch, 1000, pitch );
-        add_msg_debug( "PITCH %f", pitch );
+        add_msg_debug( debugmode::DF_SOUND, "PITCH %f", pitch );
     }
     previous_speed = current_speed;
     previous_gear = current_gear;
@@ -805,7 +808,7 @@ void sfx::do_vehicle_exterior_engine_sfx()
     // early bail-outs for efficiency
     if( player_character.in_vehicle ) {
         fade_audio_channel( ch, 300 );
-        add_msg_debug( "STOP exterior_engine_sound, IN CAR" );
+        add_msg_debug( debugmode::DF_SOUND, "STOP exterior_engine_sound, IN CAR" );
         return;
     }
     if( player_character.in_sleep_state() && !audio_muted ) {
@@ -833,7 +836,7 @@ void sfx::do_vehicle_exterior_engine_sfx()
     }
     if( !noise_factor || !veh ) {
         fade_audio_channel( ch, 300 );
-        add_msg_debug( "STOP exterior_engine_sound, NO NOISE" );
+        add_msg_debug( debugmode::DF_SOUND, "STOP exterior_engine_sound, NO NOISE" );
         return;
     }
 
@@ -862,26 +865,29 @@ void sfx::do_vehicle_exterior_engine_sfx()
         if( engine_external_id_and_variant == id_and_variant ) {
             Mix_SetPosition( ch_int, to_degrees( get_heard_angle( veh->global_pos3() ) ), 0 );
             set_channel_volume( ch, vol );
-            add_msg_debug( "PLAYING exterior_engine_sound, vol: ex:%d true:%d", vol, Mix_Volume( ch_int,
-                           -1 ) );
+            add_msg_debug( debugmode::DF_SOUND, "PLAYING exterior_engine_sound, vol: ex:%d true:%d", vol,
+                           Mix_Volume( ch_int,
+                                       -1 ) );
         } else {
             engine_external_id_and_variant = id_and_variant;
             Mix_HaltChannel( ch_int );
-            add_msg_debug( "STOP exterior_engine_sound, change id/var" );
+            add_msg_debug( debugmode::DF_SOUND, "STOP exterior_engine_sound, change id/var" );
             play_ambient_variant_sound( id_and_variant.first, id_and_variant.second, 128, ch, 0 );
             Mix_SetPosition( ch_int, to_degrees( get_heard_angle( veh->global_pos3() ) ), 0 );
             set_channel_volume( ch, vol );
-            add_msg_debug( "START exterior_engine_sound %s %s vol: %d", id_and_variant.first,
+            add_msg_debug( debugmode::DF_SOUND, "START exterior_engine_sound %s %s vol: %d",
+                           id_and_variant.first,
                            id_and_variant.second,
                            Mix_Volume( ch_int, -1 ) );
         }
     } else {
         play_ambient_variant_sound( id_and_variant.first, id_and_variant.second, 128, ch, 0 );
-        add_msg_debug( "Vol: %d %d", vol, Mix_Volume( ch_int, -1 ) );
+        add_msg_debug( debugmode::DF_SOUND, "Vol: %d %d", vol, Mix_Volume( ch_int, -1 ) );
         Mix_SetPosition( ch_int, to_degrees( get_heard_angle( veh->global_pos3() ) ), 0 );
-        add_msg_debug( "Vol: %d %d", vol, Mix_Volume( ch_int, -1 ) );
+        add_msg_debug( debugmode::DF_SOUND, "Vol: %d %d", vol, Mix_Volume( ch_int, -1 ) );
         set_channel_volume( ch, vol );
-        add_msg_debug( "START exterior_engine_sound NEW %s %s vol: ex:%d true:%d", id_and_variant.first,
+        add_msg_debug( debugmode::DF_SOUND, "START exterior_engine_sound NEW %s %s vol: ex:%d true:%d",
+                       id_and_variant.first,
                        id_and_variant.second, vol, Mix_Volume( ch_int, -1 ) );
     }
 }

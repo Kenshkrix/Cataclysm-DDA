@@ -3,24 +3,23 @@
 #include <algorithm>
 #include <cstddef>
 #include <map>
-#include <memory>
 #include <unordered_set>
 
 #include "bodypart.h"
 #include "color.h"
 #include "debug.h"
+#include "effect_source.h"
 #include "enums.h"
 #include "generic_factory.h"
 #include "json.h"
 #include "messages.h"
+#include "optional.h"
 #include "output.h"
 #include "player.h"
 #include "rng.h"
-#include "text_snippets.h"
 #include "string_formatter.h"
-#include "string_id.h"
+#include "text_snippets.h"
 #include "units.h"
-#include "effect_source.h"
 
 static const efftype_id effect_bandaged( "bandaged" );
 static const efftype_id effect_beartrap( "beartrap" );
@@ -795,7 +794,8 @@ void effect::set_duration( const time_duration &dur, bool alert )
         set_intensity( duration / eff_type->int_dur_factor + 1, alert );
     }
 
-    add_msg_debug( "ID: %s, Duration %s", get_id().c_str(), to_string( duration ) );
+    add_msg_debug( debugmode::DF_EFFECT, "ID: %s, Duration %s", get_id().c_str(),
+                   to_string( duration ) );
 }
 void effect::mod_duration( const time_duration &dur, bool alert )
 {
@@ -858,7 +858,7 @@ int effect::set_intensity( int val, bool alert )
 {
     if( intensity < 1 ) {
         // Fix bad intensity
-        add_msg_debug( "Bad intensity, ID: %s", get_id().c_str() );
+        add_msg_debug( debugmode::DF_EFFECT, "Bad intensity, ID: %s", get_id().c_str() );
         intensity = 1;
     }
 
@@ -876,7 +876,8 @@ int effect::set_intensity( int val, bool alert )
     int old_intensity = intensity;
     intensity = val;
     if( old_intensity != intensity ) {
-        add_msg_debug( "%s intensity %d->%d", get_id().c_str(), old_intensity, intensity );
+        add_msg_debug( debugmode::DF_EFFECT, "%s intensity %d->%d", get_id().c_str(), old_intensity,
+                       intensity );
     }
 
     return intensity;

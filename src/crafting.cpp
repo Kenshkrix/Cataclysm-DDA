@@ -3,20 +3,23 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <iosfwd>
 #include <limits>
 #include <map>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
 #include "activity_actor_definitions.h"
 #include "activity_handlers.h"
-#include "activity_type.h"
 #include "avatar.h"
 #include "bionics.h"
 #include "calendar.h"
@@ -32,7 +35,6 @@
 #include "enums.h"
 #include "faction.h"
 #include "flag.h"
-#include "flat_set.h"
 #include "game.h"
 #include "game_constants.h"
 #include "game_inventory.h"
@@ -41,6 +43,7 @@
 #include "item.h"
 #include "item_contents.h"
 #include "item_location.h"
+#include "item_pocket.h"
 #include "item_stack.h"
 #include "itype.h"
 #include "iuse.h"
@@ -65,17 +68,16 @@
 #include "ret_val.h"
 #include "rng.h"
 #include "string_formatter.h"
-#include "string_id.h"
 #include "string_input_popup.h"
 #include "translations.h"
 #include "type_id.h"
 #include "ui.h"
 #include "units.h"
-#include "units_fwd.h"
 #include "value_ptr.h"
 #include "veh_type.h"
 #include "vehicle.h"
 #include "vehicle_selector.h"
+#include "visitable.h"
 #include "vpart_position.h"
 #include "weather.h"
 
@@ -443,10 +445,10 @@ bool Character::check_eligible_containers_for_crafting( const recipe &rec, int b
 
 static bool is_container_eligible_for_crafting( const item &cont, bool allow_bucket )
 {
-    if( cont.is_watertight_container() && ( allow_bucket || !cont.will_spill() ) ) {
+    if( cont.is_watertight_container() && cont.contents.num_item_stacks() <= 1 && ( allow_bucket ||
+            !cont.will_spill() ) ) {
         return !cont.is_container_full( allow_bucket );
     }
-
     return false;
 }
 
@@ -859,7 +861,7 @@ void Character::start_craft( craft_command &command, const cata::optional<tripoi
         craft.tname() );
 }
 
-void Character::craft_skill_gain( const item &craft, const int &multiplier )
+void Character::craft_skill_gain( const item &craft, const int &num_practice_ticks )
 {
     if( !craft.is_craft() ) {
         debugmsg( "craft_skill_check() called on non-craft '%s.' Aborting.", craft.tname() );
@@ -872,32 +874,26 @@ void Character::craft_skill_gain( const item &craft, const int &multiplier )
     std::vector<npc *> helpers = get_crafting_helpers();
 
     if( making.skill_used ) {
-        // Logically speaking, we practice by one point per turn of crafting.
-        // However we don't count turns of crafting added by missing proficiencies,
-        const double nominal_craft_time = making.time_to_craft_moves( *this,
-                                          recipe_time_flag::ignore_proficiencies ) / 100.0;
-        // One tick is 5% of the total, hence / 20.
-        const int base_practice = std::max( 1.0, multiplier * nominal_craft_time / 20.0 );
         const int skill_cap = static_cast<int>( making.difficulty * 1.25 );
-        practice( making.skill_used, base_practice, skill_cap, true );
+        practice( making.skill_used, num_practice_ticks, skill_cap, true );
 
         // NPCs assisting or watching should gain experience...
         for( auto &helper : helpers ) {
             //If the NPC can understand what you are doing, they gain more exp
             if( helper->get_skill_level( making.skill_used ) >= making.difficulty ) {
-                helper->practice( making.skill_used, roll_remainder( base_practice / 2.0 ),
+                helper->practice( making.skill_used, roll_remainder( num_practice_ticks / 2.0 ),
                                   skill_cap );
-                if( batch_size > 1 && one_in( 3 ) ) {
+                if( batch_size > 1 && one_in( 300 ) ) {
                     add_msg( m_info, _( "%s assists with crafting…" ), helper->name );
                 }
-                if( batch_size == 1 && one_in( 3 ) ) {
+                if( batch_size == 1 && one_in( 300 ) ) {
                     add_msg( m_info, _( "%s could assist you with a batch…" ), helper->name );
                 }
                 // NPCs around you understand the skill used better
             } else {
-                helper->practice( making.skill_used, roll_remainder( base_practice / 10.0 ),
+                helper->practice( making.skill_used, roll_remainder( num_practice_ticks / 10.0 ),
                                   skill_cap );
-                if( one_in( 3 ) ) {
+                if( one_in( 300 ) ) {
                     add_msg( m_info, _( "%s watches you craft…" ), helper->name );
                 }
             }
@@ -1212,10 +1208,7 @@ void Character::complete_craft( item &craft, const cata::optional<tripoint> &loc
             }
         }
 
-        //If item is crafted neither from poor-fit nor from perfect-fit components, and it can be refitted, the result is refitted by default
-        if( newit.has_flag( flag_VARSIZE ) ) {
-            newit.set_flag( flag_FIT );
-        }
+        // Newly-crafted items are perfect by default. Inspect their materials to see if they shouldn't be
         food_contained.inherit_flags( used, making );
 
         for( const flag_id &flag : making.flags_to_delete ) {
@@ -2319,11 +2312,14 @@ void Character::disassemble_all( bool one_pass )
     assign_activity( player_activity(), true );
 
     bool found_any = false;
+    std::vector<item_location> to_disassemble;
     for( item &it : get_map().i_at( pos() ) ) {
+        to_disassemble.push_back( item_location( map_cursor( pos() ), &it ) );
+    }
+    for( item_location &it_loc : to_disassemble ) {
         // Prevent disassembling an in process disassembly because it could have been created by a previous iteration of this loop
         // and choosing to place it on the ground
-        if( it.typeId() != itype_disassembly &&
-            disassemble( item_location( map_cursor( pos() ), &it ), false ) ) {
+        if( disassemble( it_loc, false ) ) {
             found_any = true;
         }
     }

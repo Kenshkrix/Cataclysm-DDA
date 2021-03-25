@@ -2,8 +2,8 @@
 #ifndef CATA_SRC_DIALOGUE_H
 #define CATA_SRC_DIALOGUE_H
 
-#include <algorithm>
 #include <functional>
+#include <iosfwd>
 #include <memory>
 #include <set>
 #include <string>
@@ -12,17 +12,17 @@
 #include <vector>
 
 #include "dialogue_win.h"
-#include "json.h"
 #include "npc.h"
-#include "string_id.h"
+#include "talker.h"
 #include "translations.h"
 #include "type_id.h"
 
-struct input_event;
+class JsonArray;
+class JsonObject;
 class martialart;
 class mission;
-class talker;
 struct dialogue;
+struct input_event;
 
 enum talk_trial_type : unsigned char {
     TALK_TRIAL_NONE, // No challenge here!
@@ -172,12 +172,12 @@ struct talk_effect_t {
         void set_effect_consequence( const talk_effect_fun_t &fun, dialogue_consequence con );
         void set_effect_consequence( const std::function<void( npc &p )> &ptr, dialogue_consequence con );
 
-        void load_effect( const JsonObject &jo );
+        void load_effect( const JsonObject &jo, const std::string &member_name );
         void parse_sub_effect( const JsonObject &jo );
         void parse_string_effect( const std::string &effect_id, const JsonObject &jo );
 
         talk_effect_t() = default;
-        explicit talk_effect_t( const JsonObject & );
+        explicit talk_effect_t( const JsonObject &, const std::string & );
 
         /**
          * Functions that are called when the response is chosen.

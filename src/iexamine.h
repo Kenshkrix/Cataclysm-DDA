@@ -2,20 +2,19 @@
 #ifndef CATA_SRC_IEXAMINE_H
 #define CATA_SRC_IEXAMINE_H
 
+#include <iosfwd>
 #include <list>
-#include <string>
 #include <tuple>
 #include <vector>
 
-#include "calendar.h"
 #include "optional.h"
 #include "ret_val.h"
 #include "type_id.h"
 
 class item;
 class player;
+class time_point;
 class vpart_reference;
-
 struct itype;
 struct tripoint;
 
@@ -82,7 +81,6 @@ void tree_maple_tapped( player &p, const tripoint &examp );
 void shrub_marloss( player &p, const tripoint &examp );
 void tree_marloss( player &p, const tripoint &examp );
 void shrub_wildveggies( player &p, const tripoint &examp );
-void recycle_compactor( player &p, const tripoint &examp );
 void water_source( player &p, const tripoint &examp );
 void clean_water_source( player &, const tripoint &examp );
 void kiln_empty( player &p, const tripoint &examp );

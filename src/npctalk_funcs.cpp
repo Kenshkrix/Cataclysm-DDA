@@ -1,20 +1,28 @@
+#include "npctalk.h" // IWYU pragma: associated
+
 #include <algorithm>
 #include <cstddef>
+#include <iosfwd>
+#include <list>
 #include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <vector>
 
+#include "activity_type.h"
 #include "auto_pickup.h"
 #include "avatar.h"
 #include "basecamp.h"
 #include "bionics.h"
+#include "bodypart.h"
 #include "calendar.h"
 #include "cata_utility.h"
 #include "character.h"
 #include "character_id.h"
 #include "character_martial_arts.h"
 #include "coordinates.h"
+#include "creature.h"
 #include "debug.h"
 #include "dialogue_chatbin.h"
 #include "enums.h"
@@ -25,17 +33,18 @@
 #include "game_constants.h"
 #include "game_inventory.h"
 #include "item.h"
+#include "item_contents.h"
 #include "item_location.h"
 #include "line.h"
 #include "magic.h"
 #include "map.h"
+#include "memory_fast.h"
 #include "messages.h"
 #include "mission.h"
 #include "monster.h"
 #include "morale_types.h"
 #include "mutation.h"
 #include "npc.h"
-#include "npctalk.h" // IWYU pragma: associated
 #include "npctrade.h"
 #include "optional.h"
 #include "output.h"
@@ -45,7 +54,6 @@
 #include "player_activity.h"
 #include "point.h"
 #include "rng.h"
-#include "string_id.h"
 #include "translations.h"
 #include "ui.h"
 #include "viewer.h"
@@ -202,7 +210,7 @@ void spawn_animal( npc &p, const mtype_id &mon )
         mon_ptr->add_effect( effect_pet, 1_turns, true );
     } else {
         // TODO: handle this gracefully (return the money, proper in-character message from npc)
-        add_msg_debug( "No space to spawn purchased pet" );
+        add_msg_debug( debugmode::DF_NPC, "No space to spawn purchased pet" );
     }
 }
 

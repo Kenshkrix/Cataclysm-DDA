@@ -1,18 +1,28 @@
-#include "catch/catch.hpp"
-
+#include <functional>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <new>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "calendar.h"
+#include "catch/catch.hpp"
+#include "debug.h"
 #include "enums.h"
 #include "flag.h"
 #include "item.h"
 #include "item_category.h"
+#include "item_contents.h"
+#include "item_location.h"
 #include "item_pocket.h"
 #include "itype.h"
 #include "optional.h"
 #include "ret_val.h"
 #include "type_id.h"
 #include "units.h"
+#include "value_ptr.h"
 
 // Pocket Tests
 // ------------
@@ -1325,7 +1335,7 @@ TEST_CASE( "character best pocket", "[pocket][character][best]" )
 
 TEST_CASE( "guns and gunmods", "[pocket][gunmod]" )
 {
-    item m4a1( "m4a1" );
+    item m4a1( "nato_assault_rifle" );
     item strap( "shoulder_strap" );
     // Guns cannot "contain" gunmods, but gunmods can be inserted into guns
     CHECK_FALSE( m4a1.contents.can_contain( strap ).success() );

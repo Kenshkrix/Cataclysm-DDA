@@ -6,25 +6,22 @@
 #include <climits>
 #include <cstddef>
 #include <functional>
+#include <iosfwd>
 #include <map>
+#include <new>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "bodypart.h"
 #include "calendar.h"
 #include "character_id.h"
 #include "color.h"
 #include "creature.h"
-#include "cursesdef.h"
 #include "damage.h"
-#include "effect_source.h"
 #include "enums.h"
 #include "item.h"
 #include "mtype.h"
 #include "optional.h"
-#include "pldata.h"
 #include "point.h"
 #include "type_id.h"
 #include "units_fwd.h"
@@ -35,7 +32,12 @@ class JsonIn;
 class JsonObject;
 class JsonOut;
 class effect;
+class effect_source;
 class player;
+namespace catacurses
+{
+class window;
+}  // namespace catacurses
 struct dealt_projectile_attack;
 struct pathfinding_settings;
 struct trap;
@@ -104,7 +106,7 @@ class monster : public Creature
         }
 
         void poly( const mtype_id &id );
-        bool can_upgrade();
+        bool can_upgrade() const;
         void hasten_upgrade();
         int get_upgrade_time() const;
         void allow_upgrade();
@@ -441,11 +443,16 @@ class monster : public Creature
         using Creature::add_msg_if_npc;
         void add_msg_if_npc( const std::string &msg ) const override;
         void add_msg_if_npc( const game_message_params &params, const std::string &msg ) const override;
+        using Creature::add_msg_debug_if_npc;
+        void add_msg_debug_if_npc( debugmode::debug_filter type, const std::string &msg ) const override;
         using Creature::add_msg_player_or_npc;
         void add_msg_player_or_npc( const std::string &player_msg,
                                     const std::string &npc_msg ) const override;
         void add_msg_player_or_npc( const game_message_params &params, const std::string &player_msg,
                                     const std::string &npc_msg ) const override;
+        using Creature::add_msg_debug_player_or_npc;
+        void add_msg_debug_player_or_npc( debugmode::debug_filter type, const std::string &player_msg,
+                                          const std::string &npc_msg ) const override;
         // TEMP VALUES
         tripoint wander_pos; // Wander destination - Just try to move in that direction
         int wandf = 0;       // Urge to wander - Increased by sound, decrements each move

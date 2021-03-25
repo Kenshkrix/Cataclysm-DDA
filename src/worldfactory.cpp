@@ -8,6 +8,7 @@
 #include <iterator>
 #include <memory>
 #include <set>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 
@@ -1608,7 +1609,7 @@ void load_external_option( const JsonObject &jo )
         } else {
             opt.setValue( "false" );
         }
-    } else if( stype == "string" ) {
+    } else if( stype == "string" || stype == "string_input" ) {
         opt.setValue( jo.get_string( "value" ) );
     } else {
         jo.throw_error( "Unknown or unsupported stype for external option", "stype" );

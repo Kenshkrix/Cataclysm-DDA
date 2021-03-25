@@ -1,9 +1,11 @@
 #include "explosion.h" // IWYU pragma: associated
+#include "fragment_cloud.h" // IWYU pragma: associated
 
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <iosfwd>
 #include <limits>
 #include <map>
 #include <memory>
@@ -18,17 +20,15 @@
 #include "calendar.h"
 #include "cata_utility.h"
 #include "character.h"
+#include "colony.h"
 #include "color.h"
 #include "creature.h"
 #include "damage.h"
 #include "debug.h"
 #include "enums.h"
 #include "field_type.h"
-#include "flat_set.h"
-#include "fragment_cloud.h" // IWYU pragma: associated
 #include "game.h"
 #include "game_constants.h"
-#include "int_id.h"
 #include "item.h"
 #include "item_factory.h"
 #include "itype.h"
@@ -38,6 +38,7 @@
 #include "map.h"
 #include "map_iterator.h"
 #include "mapdata.h"
+#include "math_defines.h"
 #include "messages.h"
 #include "mongroup.h"
 #include "monster.h"
@@ -77,8 +78,7 @@ static const trait_id trait_PER_SLIME_OK( "PER_SLIME_OK" );
 
 static const mongroup_id GROUP_NETHER( "GROUP_NETHER" );
 
-static const bionic_id bio_ears( "bio_ears" );
-static const bionic_id bio_sunglasses( "bio_sunglasses" );
+static const json_character_flag json_flag_GLARE_RESIST( "GLARE_RESIST" );
 
 // Global to smuggle data into shrapnel_calc() function without replicating it across entire map.
 // Mass in kg
@@ -311,7 +311,8 @@ static void do_blast( const tripoint &p, const float power,
             continue;
         }
 
-        add_msg_debug( "Blast hits %s with force %.1f", critter->disp_name(), force );
+        add_msg_debug( debugmode::DF_EXPLOSION, "Blast hits %s with force %.1f", critter->disp_name(),
+                       force );
 
         Character *pl = critter->as_character();
         if( pl == nullptr ) {
@@ -320,7 +321,8 @@ static void do_blast( const tripoint &p, const float power,
             const int actual_dmg = rng_float( dmg * 2, dmg * 3 );
             critter->apply_damage( nullptr, bodypart_id( "torso" ), actual_dmg );
             critter->check_dead_state();
-            add_msg_debug( "Blast hits %s for %d damage", critter->disp_name(), actual_dmg );
+            add_msg_debug( debugmode::DF_EXPLOSION, "Blast hits %s for %d damage", critter->disp_name(),
+                           actual_dmg );
             continue;
         }
 
@@ -354,7 +356,8 @@ static void do_blast( const tripoint &p, const float power,
             const dealt_damage_instance result = pl->deal_damage( nullptr, blp.bp, dmg_instance );
             const int res_dmg = result.total_damage();
 
-            add_msg_debug( "%s for %d raw, %d actual", hit_part_name, part_dam, res_dmg );
+            add_msg_debug( debugmode::DF_EXPLOSION, "%s for %d raw, %d actual", hit_part_name, part_dam,
+                           res_dmg );
             if( res_dmg > 0 ) {
                 pl->add_msg_if_player( m_bad, _( "Your %s is hit for %d damage!" ), hit_part_name, res_dmg );
             }
@@ -435,10 +438,10 @@ static std::vector<tripoint> shrapnel( const tripoint &src, int power,
                 } else {
                     non_damaging_hits++;
                 }
-                add_msg_debug( "Shrapnel hit %s at %d m/s at a distance of %d",
+                add_msg_debug( debugmode::DF_EXPLOSION, "Shrapnel hit %s at %d m/s at a distance of %d",
                                critter->disp_name(),
                                frag.proj.speed, rl_dist( src, target ) );
-                add_msg_debug( "Shrapnel dealt %d damage", frag.dealt_dam.total_damage() );
+                add_msg_debug( debugmode::DF_EXPLOSION, "Shrapnel dealt %d damage", frag.dealt_dam.total_damage() );
                 if( critter->is_dead_state() ) {
                     break;
                 }
@@ -564,7 +567,7 @@ void flashbang( const tripoint &p, bool player_immune )
     int dist = rl_dist( player_character.pos(), p );
     map &here = get_map();
     if( dist <= 8 && !player_immune ) {
-        if( !player_character.has_bionic( bio_ears ) &&
+        if( !player_character.has_flag( STATIC( json_character_flag( "IMMUNE_HEARING_DAMAGE" ) ) ) &&
             !player_character.is_wearing( itype_rm13_armor_on ) ) {
             player_character.add_effect( effect_deaf, time_duration::from_turns( 40 - dist * 4 ) );
         }
@@ -576,7 +579,7 @@ void flashbang( const tripoint &p, bool player_immune )
                 }
             } else if( player_character.has_trait( trait_PER_SLIME_OK ) ) {
                 flash_mod = 8; // Just retract those and extrude fresh eyes
-            } else if( player_character.has_bionic( bio_sunglasses ) ||
+            } else if( player_character.has_flag( json_flag_GLARE_RESIST ) ||
                        player_character.is_wearing( itype_rm13_armor_on ) ) {
                 flash_mod = 6;
             } else if( player_character.worn_with_flag( STATIC( flag_id( "BLIND" ) ) ) ||

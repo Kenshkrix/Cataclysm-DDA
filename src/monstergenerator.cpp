@@ -1,6 +1,12 @@
+#include "mattack_common.h" // IWYU pragma: associated
+#include "monstergenerator.h" // IWYU pragma: associated
+
 #include <algorithm>
 #include <cstdlib>
+#include <limits>
+#include <new>
 #include <set>
+#include <string>
 #include <utility>
 
 #include "assign.h"
@@ -12,27 +18,22 @@
 #include "damage.h"
 #include "debug.h"
 #include "enum_conversions.h"
-#include "game.h"
+#include "field_type.h"
 #include "generic_factory.h"
 #include "item.h"
 #include "item_group.h"
 #include "json.h"
 #include "mattack_actors.h"
-#include "mattack_common.h" // IWYU pragma: associated
 #include "monattack.h"
 #include "mondeath.h"
 #include "mondefense.h"
-#include "monfaction.h"
 #include "mongroup.h"
-#include "monstergenerator.h" // IWYU pragma: associated
 #include "optional.h"
 #include "options.h"
 #include "pathfinding.h"
 #include "rng.h"
-#include "string_id.h"
 #include "translations.h"
 #include "units.h"
-#include "units_fwd.h"
 
 namespace behavior
 {
@@ -51,6 +52,7 @@ std::string enum_to_string<mon_trigger>( mon_trigger data )
         case mon_trigger::MEAT: return "MEAT";
         case mon_trigger::HOSTILE_WEAK: return "PLAYER_WEAK";
         case mon_trigger::HOSTILE_CLOSE: return "PLAYER_CLOSE";
+        case mon_trigger::HOSTILE_SEEN: return "HOSTILE_SEEN";
         case mon_trigger::HURT: return "HURT";
         case mon_trigger::FIRE: return "FIRE";
         case mon_trigger::FRIEND_DIED: return "FRIEND_DIED";
@@ -526,6 +528,8 @@ void MonsterGenerator::init_death()
     death_map["BROKEN_AMMO"] = &mdeath::broken_ammo;
     // Explode like a huge smoke bomb.
     death_map["SMOKEBURST"] = &mdeath::smokeburst;
+    // Explode like a huge tear gas bomb.
+    death_map["TEARBURST"] = &mdeath::tearburst;
     // Explode with a cloud of fungal haze.
     death_map["FUNGALBURST"] = &mdeath::fungalburst;
     // Snicker-snack!

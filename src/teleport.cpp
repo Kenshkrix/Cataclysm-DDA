@@ -1,6 +1,8 @@
 #include "teleport.h"
 
+#include <cmath>
 #include <memory>
+#include <string>
 
 #include "calendar.h"
 #include "character.h"
@@ -34,6 +36,12 @@ bool teleport::teleport( Creature &critter, int min_distance, int max_distance, 
     tripoint origin = critter.pos();
     tripoint new_pos = origin;
     map &here = get_map();
+    //The teleportee is dimensionally anchored so nothing happens
+    if( p && ( p->worn_with_flag( json_flag_DIMENSIONAL_ANCHOR ) ||
+               p->has_flag( json_flag_DIMENSIONAL_ANCHOR ) ) ) {
+        p->add_msg_if_player( m_warning, _( "You feel a strange, inwards force." ) );
+        return false;
+    }
     do {
         int rangle = rng( 0, 360 );
         int rdistance = rng( min_distance, max_distance );
@@ -85,7 +93,7 @@ bool teleport::teleport_to_point( Creature &critter, const tripoint &target, boo
             }
             return false;
         } else if( poor_player && ( poor_player->worn_with_flag( json_flag_DIMENSIONAL_ANCHOR ) ||
-                                    poor_player->has_effect_with_flag( json_flag_DIMENSIONAL_ANCHOR ) ) ) {
+                                    poor_player->has_flag( json_flag_DIMENSIONAL_ANCHOR ) ) ) {
             poor_player->add_msg_if_player( m_warning, _( "You feel disjointed." ) );
             return false;
         } else {

@@ -2,10 +2,11 @@
 #ifndef CATA_SRC_CREATURE_H
 #define CATA_SRC_CREATURE_H
 
+#include <array>
 #include <climits>
+#include <iosfwd>
 #include <map>
 #include <set>
-#include <string>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -19,13 +20,13 @@
 #include "location.h"
 #include "pimpl.h"
 #include "string_formatter.h"
-#include "string_id.h"
-#include "translations.h"
 #include "type_id.h"
 #include "units_fwd.h"
 #include "viewer.h"
 
 class monster;
+class translation;
+template <typename T> struct enum_traits;
 
 enum game_message_type : int;
 class effect;
@@ -43,6 +44,7 @@ class anatomy;
 class avatar;
 class field;
 class field_entry;
+class npc;
 class player;
 class time_duration;
 struct point;
@@ -50,13 +52,10 @@ struct tripoint;
 
 enum class damage_type : int;
 enum m_flag : int;
-struct damage_instance;
-struct damage_unit;
-struct dealt_damage_instance;
 struct dealt_projectile_attack;
+struct pathfinding_settings;
 struct projectile;
 struct projectile_attack_results;
-struct pathfinding_settings;
 struct trap;
 
 using anatomy_id = string_id<anatomy>;
@@ -263,6 +262,12 @@ class Creature : public location, public viewer
             return nullptr;
         }
         virtual const avatar *as_avatar() const {
+            return nullptr;
+        }
+        virtual const npc *as_npc() {
+            return nullptr;
+        }
+        virtual const npc *as_npc() const {
             return nullptr;
         }
         virtual monster *as_monster() {
@@ -966,6 +971,93 @@ class Creature : public location, public viewer
                                           string_format( npc_msg, std::forward<Args>( args )... ) );
         }
 
+        virtual void add_msg_debug_if_player( debugmode::debug_filter /*type*/,
+                                              const std::string &/*msg*/ ) const {}
+        void add_msg_debug_if_player( debugmode::debug_filter /*type*/, const translation &/*msg*/ ) const;
+        template<typename ...Args>
+        void add_msg_debug_if_player( debugmode::debug_filter type, const char *const msg,
+                                      Args &&... args ) const {
+            // expanding for string formatting can be expensive
+            if( debug_mode ) {
+                return add_msg_debug_if_player( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_if_player( debugmode::debug_filter type, const std::string &msg,
+                                      Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_if_player( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_if_player( debugmode::debug_filter type, const translation &msg,
+                                      Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_if_player( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+
+        virtual void add_msg_debug_if_npc( debugmode::debug_filter /*type*/,
+                                           const std::string &/*msg*/ ) const {}
+        void add_msg_debug_if_npc( debugmode::debug_filter /*type*/, const translation &/*msg*/ ) const;
+        template<typename ...Args>
+        void add_msg_debug_if_npc( debugmode::debug_filter type, const char *const msg,
+                                   Args &&... args ) const {
+            // expanding for string formatting can be expensive
+            if( debug_mode ) {
+                return add_msg_debug_if_npc( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_if_npc( debugmode::debug_filter type, const std::string &msg,
+                                   Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_if_npc( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_if_npc( debugmode::debug_filter type, const translation &msg,
+                                   Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_if_npc( type, string_format( msg, std::forward<Args>( args )... ) );
+            }
+        }
+
+        virtual void add_msg_debug_player_or_npc( debugmode::debug_filter /*type*/,
+                const std::string &/*player_msg*/,
+                const std::string &/*npc_msg*/ ) const {}
+        void add_msg_debug_player_or_npc( debugmode::debug_filter /*type*/,
+                                          const translation &/*player_msg*/,
+                                          const translation &/*npc_msg*/ ) const;
+        template<typename ...Args>
+        void add_msg_debug_player_or_npc( debugmode::debug_filter type, const char *const player_msg,
+                                          const char *const npc_msg, Args &&... args ) const {
+            // expanding for string formatting can be expensive
+            if( debug_mode ) {
+                return add_msg_debug_player_or_npc( type, string_format( player_msg,
+                                                    std::forward<Args>( args )... ),
+                                                    string_format( npc_msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_player_or_npc( debugmode::debug_filter type, const std::string &player_msg,
+                                          const std::string &npc_msg, Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_player_or_npc( type, string_format( player_msg,
+                                                    std::forward<Args>( args )... ),
+                                                    string_format( npc_msg, std::forward<Args>( args )... ) );
+            }
+        }
+        template<typename ...Args>
+        void add_msg_debug_player_or_npc( debugmode::debug_filter type, const translation &player_msg,
+                                          const translation &npc_msg, Args &&... args ) const {
+            if( debug_mode ) {
+                return add_msg_debug_player_or_npc( type, string_format( player_msg,
+                                                    std::forward<Args>( args )... ),
+                                                    string_format( npc_msg, std::forward<Args>( args )... ) );
+            }
+        }
+
         virtual void add_msg_player_or_say( const std::string &/*player_msg*/,
                                             const std::string &/*npc_speech*/ ) const {}
         virtual void add_msg_player_or_say( const game_message_params &/*params*/,
@@ -1138,8 +1230,6 @@ class Creature : public location, public viewer
 
     private:
         int pain;
-
-
         // calculate how well the projectile hits
         double accuracy_projectile_attack( dealt_projectile_attack &attack ) const;
         // what bodypart does the projectile hit

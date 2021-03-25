@@ -144,8 +144,8 @@ class CDDAPullRequest(PullRequest):
     "Summary" descriptions"""
 
     SUMMARY_REGEX = re.compile(
-        r'(?i:####\sSummary)(?i:\s+SUMMARY:?)?\s*'
-        r'`*(?P<pr_type>\w+)\s*(?:"(?P<pr_desc>.+)")?',
+        r'(?i:####\sSummary)\s*'
+        r'`*(?i:SUMMARY:?\s*)?(?P<pr_type>\w+)\s*(?:"(?P<pr_desc>.+)")?',
         re.MULTILINE)
 
     VALID_SUMMARY_CATEGORIES = (
@@ -1028,7 +1028,7 @@ def main_entry(argv):
         if x == '-':
             return sys.stdout
         else:
-            pathlib.Path(x).expanduser().resolve()
+            return pathlib.Path(x).expanduser().resolve()
 
     parser.add_argument(
         '-D', '--by-date',

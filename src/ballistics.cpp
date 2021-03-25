@@ -3,9 +3,10 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <functional>
+#include <iosfwd>
 #include <memory>
 #include <set>
-#include <string>
 #include <vector>
 
 #include "calendar.h"
@@ -31,7 +32,6 @@
 #include "trap.h"
 #include "type_id.h"
 #include "units.h"
-#include "units_fwd.h"
 #include "visitable.h"
 #include "vpart_position.h"
 
@@ -267,7 +267,8 @@ dealt_projectile_attack projectile_attack( const projectile &proj_arg, const tri
         trajectory = here.find_clear_path( source, target );
     }
 
-    add_msg_debug( "missed_by_tiles: %.2f; missed_by: %.2f; target (orig/hit): %d,%d,%d/%d,%d,%d",
+    add_msg_debug( debugmode::DF_BALLISTIC,
+                   "missed_by_tiles: %.2f; missed_by: %.2f; target (orig/hit): %d,%d,%d/%d,%d,%d",
                    aim.missed_by_tiles, aim.missed_by,
                    target_arg.x, target_arg.y, target_arg.z,
                    target.x, target.y, target.z );

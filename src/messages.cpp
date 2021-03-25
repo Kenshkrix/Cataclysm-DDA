@@ -4,8 +4,6 @@
 #include "calendar.h"
 #include "catacharset.h"
 #include "color.h"
-// needed for the workaround for the std::to_string bug in some compilers
-#include "compatibility.h" // IWYU pragma: keep
 #include "cursesdef.h"
 #include "debug.h"
 #include "enums.h"
@@ -24,12 +22,14 @@
 #if defined(__ANDROID__)
 #include <SDL_keyboard.h>
 #endif
-#include "options.h"
-
 #include <algorithm>
 #include <deque>
+#include <functional>
 #include <iterator>
 #include <memory>
+#include <string>
+
+#include "options.h"
 
 namespace
 {
@@ -345,6 +345,18 @@ void Messages::add_msg( std::string msg )
 void Messages::add_msg( const game_message_params &params, std::string msg )
 {
     player_messages.add_msg_string( std::move( msg ), params );
+}
+
+void Messages::add_msg_debug( debugmode::debug_filter type, std::string msg )
+{
+    if( debug_mode &&
+        std::find(
+            debugmode::enabled_filters.begin(), debugmode::enabled_filters.end(),
+            type ) == debugmode::enabled_filters.end() ) {
+        return;
+    }
+
+    player_messages.add_msg_string( std::move( msg ), m_debug );
 }
 
 void Messages::clear_messages()
@@ -886,6 +898,11 @@ void add_msg( const game_message_params &params, std::string msg )
     Messages::add_msg( params, std::move( msg ) );
 }
 
+void add_msg_debug( debugmode::debug_filter type, std::string msg )
+{
+    Messages::add_msg_debug( type, std::move( msg ) );
+}
+
 void add_msg_if_player_sees( const tripoint &target, std::string msg )
 {
     if( get_player_view().sees( target ) ) {
@@ -913,5 +930,21 @@ void add_msg_if_player_sees( const Creature &target, const game_message_params &
 {
     if( get_player_view().sees( target ) ) {
         Messages::add_msg( params, std::move( msg ) );
+    }
+}
+
+void add_msg_debug_if_player_sees( const tripoint &target, debugmode::debug_filter type,
+                                   std::string msg )
+{
+    if( get_player_view().sees( target ) ) {
+        Messages::add_msg_debug( type, std::move( msg ) );
+    }
+}
+
+void add_msg_debug_if_player_sees( const Creature &target, debugmode::debug_filter type,
+                                   std::string msg )
+{
+    if( get_player_view().sees( target ) ) {
+        Messages::add_msg_debug( type, std::move( msg ) );
     }
 }

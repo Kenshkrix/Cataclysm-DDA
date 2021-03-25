@@ -3,6 +3,7 @@
 #define CATA_SRC_MAPGEN_H
 
 #include <cstddef>
+#include <iosfwd>
 #include <map>
 #include <memory>
 #include <string>
@@ -11,18 +12,16 @@
 #include <vector>
 
 #include "coordinates.h"
+#include "json.h"
 #include "memory_fast.h"
 #include "point.h"
 #include "regional_settings.h"
 #include "type_id.h"
+#include "weighted_list.h"
 
-class JsonArray;
-class JsonMember;
-class JsonObject;
 class map;
 class mapgendata;
 class mission;
-template <typename T> struct weighted_int_list;
 
 using building_gen_pointer = void ( * )( mapgendata & );
 
@@ -459,11 +458,6 @@ enum room_type {
     room_bedroom,
     room_backyard,
     room_study,
-    room_mine_shaft,
-    room_mine_office,
-    room_mine_storage,
-    room_mine_fuel,
-    room_mine_housing,
     room_split
 };
 

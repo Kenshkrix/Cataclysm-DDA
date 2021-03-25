@@ -1,10 +1,12 @@
 #include "computer_session.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
+#include <functional>
 #include <memory>
+#include <new>
 #include <string>
+#include <type_traits>
 #include <utility>
 
 #include "avatar.h"
@@ -26,7 +28,6 @@
 #include "game_constants.h"
 #include "game_inventory.h"
 #include "input.h"
-#include "int_id.h"
 #include "item.h"
 #include "item_contents.h"
 #include "item_factory.h"
@@ -51,7 +52,6 @@
 #include "rng.h"
 #include "sounds.h"
 #include "string_formatter.h"
-#include "string_id.h"
 #include "text_snippets.h"
 #include "timed_event.h"
 #include "translations.h"
@@ -405,12 +405,21 @@ void computer_session::action_unlock()
     query_any( _( "Lock disabled.  Press any key…" ) );
 }
 
-//Toll is required for the church computer/mechanism to function
+//Toll is required for the church/school computer/mechanism to function
 void computer_session::action_toll()
 {
-    sounds::sound( get_player_character().pos(), 120, sounds::sound_t::music,
-                   //~ the sound of a church bell ringing
-                   _( "Bohm…  Bohm…  Bohm…" ), true, "environment", "church_bells" );
+    if( calendar::turn < comp.next_attempt ) {
+        print_error( _( "[Bellsystem 1.2] is currently in use." ) );
+        query_any( _( "Please wait for at least one minute." ) );
+        reset_terminal();
+    } else {
+        comp.next_attempt = calendar::turn + 1_minutes;
+        sounds::sound( get_player_character().pos(), 120, sounds::sound_t::music,
+                       //~ the sound of a church bell ringing
+                       _( "Bohm…  Bohm…  Bohm…" ), true, "environment", "church_bells" );
+
+        query_any( _( "[Bellsystem 1.2] activated.  Have a nice day." ) );
+    }
 }
 
 void computer_session::action_sample()

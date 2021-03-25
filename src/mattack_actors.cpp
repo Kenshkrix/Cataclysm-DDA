@@ -4,8 +4,10 @@
 #include <limits>
 #include <list>
 #include <memory>
+#include <string>
 
 #include "avatar.h"
+#include "bodypart.h"
 #include "calendar.h"
 #include "character.h"
 #include "creature.h"
@@ -13,7 +15,6 @@
 #include "game.h"
 #include "generic_factory.h"
 #include "gun_mode.h"
-#include "int_id.h"
 #include "item.h"
 #include "item_pocket.h"
 #include "json.h"
@@ -270,7 +271,7 @@ bool melee_actor::call( monster &z ) const
 
     z.mod_moves( -move_cost );
 
-    add_msg_debug( "%s attempting to melee_attack %s", z.name(),
+    add_msg_debug( debugmode::DF_MATTACK, "%s attempting to melee_attack %s", z.name(),
                    target->disp_name() );
 
     const int acc = accuracy >= 0 ? accuracy : z.type->melee_skill;
@@ -298,7 +299,7 @@ bool melee_actor::call( monster &z ) const
     dealt_damage.bp_hit = bp_hit.id();
 
     int damage_total = dealt_damage.total_damage();
-    add_msg_debug( "%s's melee_attack did %d damage", z.name(), damage_total );
+    add_msg_debug( debugmode::DF_MATTACK, "%s's melee_attack did %d damage", z.name(), damage_total );
     if( damage_total > 0 ) {
         on_damage( z, *target, dealt_damage );
     } else {

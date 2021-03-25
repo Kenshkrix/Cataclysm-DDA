@@ -21,26 +21,26 @@ In `data/mods/Magiclysm` there is a template spell, copied here for your perusal
   "spell_class": "NONE",                                    //
 	"base_casting_time": 100,                                 // this is the casting time (in moves)
 	"base_energy_cost": 10,                                   // the amount of energy (of the requisite type) to cast the spell
-	"energy_source": "MANA",                                  // the type of energy used to cast the spell. types are: MANA, BIONIC, HP, STAMINA, FATIGUE, NONE (none will not use mana)
+	"energy_source": "MANA",                                  // the type of energy used to cast the spell. types are: MANA, BIONIC, HP, STAMINA, NONE (none will not use mana)
   "components": [requirement_id]                            // an id from a requirement, like the ones you use for crafting. spell components require to cast.
 	"difficulty": 12,                                         // the difficulty to learn/cast the spell
 	"max_level": 10,                                          // maximum level you can achieve in the spell
 	"min_damage": 0,                                          // minimum damage (or "starting" damage)
 	"max_damage": 100,                                        // maximum damage the spell can achieve
 	"damage_increment": 2.5,                                  // to get damage (and any of the other below stats) multiply this by spell's level and add to minimum damage
-	"min_aoe": 0,                                             // area of effect (currently not implemented)
+	"min_aoe": 0,                                             // area of effect, or range of variance
 	"max_aoe": 5,
 	"aoe_increment": 0.1,
 	"min_range": 1,                                           // range of the spell
 	"max_range": 10,
 	"range_increment": 2,
-	"min_dot": 0,                                             // damage over time (currently not implemented)
+	"min_dot": 0,                                             // damage over time
 	"max_dot": 2,
 	"dot_increment": 0.1,
-	"min_duration": 0,                                        // duration of spell effect (if the spell has a special effect)
+	"min_duration": 0,                                        // duration of spell effect in moves (if the spell has a special effect)
 	"max_duration": 1000,
 	"duration_increment": 4,
-	"min_pierce": 0,                                          // how much of the spell pierces armor (currently not implemented)
+	"min_pierce": 0,                                          // how much of the spell pierces armor
 	"max_pierce": 1,
 	"pierce_increment": 0.1,
 	"field_id": "fd_blood",                                   // the string id of the field (currently hardcoded)
@@ -266,7 +266,7 @@ Spell types:
     "max_aoe": 3,
     "effect": "summon",                                        // effects are coded in C++. A list is provided in this document of possible effects that have been coded.
     "effect_str": "mon_test_monster",                          // varies, see table of implemented effects in this document
-    "min_duration": 6250,                                      // duration of spell effect (if the spell has a special effect)
+    "min_duration": 6250,                                      // duration of spell effect in moves (if the spell has a special effect)
     "max_duration": 6250
   }
   ```
@@ -286,7 +286,7 @@ Spell types:
     "min_range": 4,                                          // range of the spell
     "max_range": 4,
     "base_casting_time": 500,                                // this is the casting time (in moves)
-    "min_duration": 200,                                     // duration of spell effect (if the spell has a special effect)
+    "min_duration": 200,                                     // duration of spell effect in moves (if the spell has a special effect)
     "max_duration": 300,
     "duration_increment": 10,                              // How much longer the spell lasts per spell level
     "damage_type": "stab"                                    // type of damage
@@ -316,7 +316,7 @@ Spell types:
     "min_range": 10,                                         // range of the spell
     "max_range": 10,
     "base_casting_time": 750,                                // this is the casting time (in moves)
-    "min_duration": 325,                                     // duration of spell effect (if the spell has a special effect)
+    "min_duration": 325,                                     // duration of spell effect in moves (if the spell has a special effect)
     "max_duration": 325,
     "damage_type": "stab"                                    // type of damage
   } ;
@@ -367,7 +367,7 @@ Spell types:
     "damage_increment": 0.2                        // damage increase per spell level
     "min_range": 10,                                    // range of the spell
     "max_range": 10,
-    "min_duration": 1,                                  // duration of spell effect (if the spell has a special effect)
+    "min_duration": 1,                                  // duration of spell effect in moves (if the spell has a special effect)
     "max_duration": 1
   }
   ```
@@ -385,9 +385,9 @@ Spell types:
     "effect": "target_attack",                           // effects are coded in C++. A list is provided in this document of possible effects that have been coded.
     "extra_effects": [ { "id": "sacrifice_spell", "hit_self": true }, { "id": "test_attack" } ],     // this allows you to cast multiple spells with only one spell
     "effect_str": "eff_test_note",                       // varies, see table of implemented effects in this document
-	  "min_aoe": 6,                                       // area of effect (currently not implemented)
+	  "min_aoe": 6,                                        // area of effect, or range of variance
     "max_aoe": 6,
-    "min_duration": 1,                                   // duration of spell effect (if the spell has a special effect)
+    "min_duration": 1,                                   // duration of spell effect in moves (if the spell has a special effect)
     "max_duration": 1
   }
   ```
@@ -494,6 +494,7 @@ Effects for the character that has the enchantment:
 * SOCIAL_LIE
 * SOCIAL_PERSUADE
 * SOCIAL_INTIMIDATE
+* SLEEPY : The higher this is the more easily you fall asleep.
 * ARMOR_BASH
 * ARMOR_CUT
 * ARMOR_STAB

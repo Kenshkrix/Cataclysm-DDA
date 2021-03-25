@@ -147,8 +147,10 @@ class pixel_minimap::shared_texture_pool
         //releases the provided texture back into the inactive pool to be used again
         //called automatically in the submap cache destructor
         void release_tex( size_t index, SDL_Texture_Ptr &&ptr ) {
-            inactive_index.push_back( index );
-            texture_pool[index] = std::move( ptr );
+            if( ptr ) {
+                inactive_index.push_back( index );
+                texture_pool[index] = std::move( ptr );
+            }
         }
 
     private:
@@ -183,6 +185,7 @@ struct pixel_minimap::submap_cache {
         pool.release_tex( texture_index, std::move( chunk_tex ) );
     }
 
+    submap_cache( const submap_cache & ) = delete;
     submap_cache( submap_cache && ) = default;
 
     SDL_Color &color_at( const point &p ) {

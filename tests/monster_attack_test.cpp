@@ -1,11 +1,14 @@
+#include <array>
+#include <iosfwd>
+
+#include "cached_options.h"
 #include "catch/catch.hpp"
-
 #include "character.h"
-#include "monster.h"
-
 #include "map.h"
-
 #include "map_helpers.h"
+#include "monster.h"
+#include "point.h"
+#include "type_id.h"
 
 static constexpr tripoint attacker_location{ 65, 65, 0 };
 
@@ -21,6 +24,7 @@ static void test_monster_attack( const tripoint &target_offset, bool expected )
     // Trigger basic attack.
     CAPTURE( attacker_location );
     CAPTURE( target_location );
+    CAPTURE( fov_3d );
     CHECK( test_monster.attack_at( target_location ) == expected );
     // Then test the reverse.
     clear_creatures();

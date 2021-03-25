@@ -1,29 +1,28 @@
 #include "output.h"
 
+#include <cctype>
+// IWYU pragma: no_include <sys/errno.h>
 #include <algorithm>
 #include <array>
-#include <cctype>
-#include <cerrno>
 #include <cmath>
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
-#include <memory>
+#include <new>
 #include <sstream>
 #include <stack>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <vector>
 
-#include "cached_options.h"
+#include "cached_options.h" // IWYU pragma: keep
 #include "cata_utility.h"
 #include "catacharset.h"
 #include "color.h"
+#include "cursesport.h" // IWYU pragma: keep
 #include "cursesdef.h"
-#include "cursesport.h"
 #include "input.h"
 #include "item.h"
 #include "line.h"
@@ -32,6 +31,7 @@
 #include "point.h"
 #include "popup.h"
 #include "rng.h"
+#include "sdltiles.h" // IWYU pragma: keep
 #include "string_formatter.h"
 #include "string_input_popup.h"
 #include "ui_manager.h"
@@ -616,7 +616,7 @@ border_helper::border_info &border_helper::add_border()
     return border_info_list.front();
 }
 
-void border_helper::draw_border( const catacurses::window &win )
+void border_helper::draw_border( const catacurses::window &win, nc_color border_color )
 {
     if( !border_connection_map.has_value() ) {
         border_connection_map.emplace();
@@ -654,7 +654,7 @@ void border_helper::draw_border( const catacurses::window &win )
     for( const std::pair<const point, border_connection> &conn : border_connection_map.value() ) {
         if( conn.first.x >= win_beg.x && conn.first.x < win_end.x &&
             conn.first.y >= win_beg.y && conn.first.y < win_end.y ) {
-            mvwputch( win, conn.first - win_beg, BORDER_COLOR, conn.second.as_curses_line() );
+            mvwputch( win, conn.first - win_beg, border_color, conn.second.as_curses_line() );
         }
     }
 }

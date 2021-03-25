@@ -95,6 +95,7 @@
       "sloc_horse_ranch",
       "sloc_lighthouse_ground",
       "sloc_cabin_lake",
+      "sloc_lodge_ground",
       "sloc_freshwater_research_station"
     ],
     "start_name": "Safe Building",
@@ -296,6 +297,7 @@
       "sloc_hermit_shack",
       "sloc_farm_survivalist",
       "sloc_campsite",
+      "sloc_lodge_ground",
       "sloc_campground"
     ],
     "start_name": "Outside Town",
@@ -314,6 +316,7 @@
       "sloc_field",
       "sloc_forest",
       "sloc_cabin",
+      "sloc_lodge_ground",
       "sloc_hermit_shack",
       "sloc_farm_survivalist",
       "sloc_campsite",
@@ -377,8 +380,8 @@
     "id": "alcatraz",
     "name": "Challenge - Island Prison",
     "points": -6,
-    "description": "You were at a high-security prison right before the Cataclysm.  You managed to make it outside the inner walls…  Too bad it's located on a remote island, and now you need to find out how to escape it too.",
-    "allowed_locs": [ "sloc_prison_alcatraz" ],
+    "description": "You were in a high-security prison right before the Cataclysm.  Unfortunately, you're still in it, so you need to figure out how to escape.  It's located on a remote island to boot; you'll eventually need to escape that also.",
+    "allowed_locs": [ "sloc_prison_alcatraz", "sloc_prison_island" ],
     "start_name": "Island prison",
     "professions": [
       "convict",
@@ -390,7 +393,7 @@
       "k9_cop",
       "cop"
     ],
-    "flags": [ "LONE_START", "CHALLENGE", "OUTDOOR" ]
+    "flags": [ "LONE_START", "CHALLENGE" ]
   },
   {
     "type": "scenario",
